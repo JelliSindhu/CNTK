@@ -55,6 +55,7 @@ namespace CNTK
         size_t m_truncationLength;
         std::unordered_map<StreamInformation, MinibatchData> m_minibatchData;
         std::vector<Microsoft::MSR::CNTK::StreamDescriptionPtr> m_compositeDataReaderStreamDescs;
+        size_t m_restorePosition;
 
         // For now reusing the shim to allow prefetch.
         // Please only use a subset of the shim interface that includes

@@ -155,6 +155,8 @@ ModelManifest.xml
 # Python
 *.pyc
 __pycache__/
+Source/CNTKv2LibraryDll/tensorboard/tensorboard.pb.cc
+Source/CNTKv2LibraryDll/tensorboard/tensorboard.pb.h
 
 # =========================
 # Windows detritus

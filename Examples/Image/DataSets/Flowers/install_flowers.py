@@ -52,12 +52,6 @@ def download_flowers_data():
         image_labels = loadmat(label_filename)['labels'][0]
         image_labels -= 1
 
-        # shuffle images
-        np.random.seed(23)
-        idx_train = idx_train[np.random.permutation(len(idx_train))]
-        idx_test = idx_test[np.random.permutation(len(idx_test))]
-        idx_val = idx_val[np.random.permutation(len(idx_val))]
-
         # Confusingly the training set contains 1k images and the test set contains 6k images
         write_to_file('1k_img_map.txt', dataset_folder, image_paths[idx_train], image_labels[idx_train])
         write_to_file('6k_img_map.txt', dataset_folder, image_paths[idx_test], image_labels[idx_test])

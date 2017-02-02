@@ -17,5 +17,5 @@ download_flowers_data()
    
 sys.path.append(os.path.join(base_folder, "..", "PretrainedModels"))
 from models_util import download_model_by_name
-download_model_by_name("AlexNet")
+download_model_by_name("ResNet_18")
 

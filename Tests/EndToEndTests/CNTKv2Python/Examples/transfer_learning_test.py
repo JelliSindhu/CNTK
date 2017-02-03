@@ -41,13 +41,14 @@ def test_transfer_learning(device_id):
     num_channels = 3
     num_classes = 10
 
+    num_epochs = 10
     num_train_images = 10
     num_test_images = 2
 
     output_file = os.path.join(base_path, "tl_output.txt")
     trained_model = train_model(model_file, feature_node_name, last_hidden_node_name,
                                 image_width, image_height, num_channels, num_classes, map_file,
-                                max_images=num_train_images)
+                                num_epochs=num_epochs, max_images=num_train_images, freeze=True)
     eval_test_images(trained_model, output_file, map_file, image_width, image_height,
                      max_images=num_test_images)
 
@@ -55,4 +56,3 @@ def test_transfer_learning(device_id):
     output = np.fromfile(output_file)
     expected_output = np.fromfile(expected_output_file)
     assert np.allclose(output, expected_output, atol=TOLERANCE_ABSOLUTE)
-

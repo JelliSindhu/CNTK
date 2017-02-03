@@ -22,7 +22,8 @@ from cntk.utils import log_number_of_parameters, ProgressPrinter
 ################################################
 ################################################
 # general settings
-make_mode = True
+make_mode = False
+freeze_weights = False
 base_folder = os.path.dirname(os.path.abspath(__file__))
 tl_model_file = os.path.join(base_folder, "Output", "TransferLearning.model")
 output_file = os.path.join(base_folder, "Output", "predOutput.txt")
@@ -64,14 +65,16 @@ def create_mb_source(map_file, image_width, image_height, num_channels, num_clas
 
 
 # Creates the network model for transfer learning
-def create_model(base_model_file, feature_node_name, last_hidden_node_name, num_classes, input_features):
+def create_model(base_model_file, feature_node_name, last_hidden_node_name, num_classes, input_features, freeze=False):
     # Load the pretrained classification net and find nodes
     base_model   = load_model(base_model_file)
     feature_node = find_by_name(base_model, feature_node_name)
     last_node    = find_by_name(base_model, last_hidden_node_name)
 
     # Clone the desired layers with fixed weights
-    cloned_layers = combine([last_node.owner]).clone(CloneMethod.clone, {feature_node: Placeholder(name='features')})
+    cloned_layers = combine([last_node.owner]).clone(
+        CloneMethod.freeze if freeze else CloneMethod.clone,
+        {feature_node: Placeholder(name='features')})
 
     # Add new dense layer for class prediction
     feat_norm  = input_features - Constant(114)
@@ -83,7 +86,8 @@ def create_model(base_model_file, feature_node_name, last_hidden_node_name, num_
 
 # Trains a transfer learning model
 def train_model(base_model_file, feature_node_name, last_hidden_node_name,
-                image_width, image_height, num_channels, num_classes, train_map_file, max_images=-1):
+                image_width, image_height, num_channels, num_classes, train_map_file,
+                num_epochs, max_images=-1, freeze=False):
     epoch_size = sum(1 for line in open(train_map_file))
     if max_images > 0:
         epoch_size = min(epoch_size, max_images)
@@ -100,7 +104,7 @@ def train_model(base_model_file, feature_node_name, last_hidden_node_name,
     }
 
     # Instantiate the transfer learning model and loss function
-    tl_model = create_model(base_model_file, feature_node_name, last_hidden_node_name, num_classes, image_input)
+    tl_model = create_model(base_model_file, feature_node_name, last_hidden_node_name, num_classes, image_input, freeze)
     ce = cross_entropy_with_softmax(tl_model, label_input)
     pe = classification_error(tl_model, label_input)
 
@@ -111,10 +115,10 @@ def train_model(base_model_file, feature_node_name, last_hidden_node_name,
     trainer = Trainer(tl_model, ce, pe, learner)
 
     # Get minibatches of images and perform model training
-    print("Training transfer learning model for %s epochs (epoch_size = %s)." % (max_epochs, epoch_size))
+    print("Training transfer learning model for %s epochs (epoch_size = %s)." % (num_epochs, epoch_size))
     log_number_of_parameters(tl_model)
-    progress_printer = ProgressPrinter(tag='Training', num_epochs=max_epochs)
-    for epoch in range(max_epochs):       # loop over epochs
+    progress_printer = ProgressPrinter(tag='Training', num_epochs=num_epochs)
+    for epoch in range(num_epochs):       # loop over epochs
         sample_count = 0
         while sample_count < epoch_size:  # loop over minibatches in the epoch
             data = minibatch_source.next_minibatch(min(mb_size, epoch_size-sample_count), input_map=input_map)
@@ -193,7 +197,8 @@ if __name__ == '__main__':
         trained_model = load_model(tl_model_file)
     else:
         trained_model = train_model(_base_model_file, _feature_node_name, _last_hidden_node_name,
-                                    _image_width, _image_height, _num_channels, _num_classes, _train_map_file)
+                                    _image_width, _image_height, _num_channels, _num_classes, _train_map_file,
+                                    max_epochs)
         trained_model.save_model(tl_model_file)
         print("Stored trained model at %s" % tl_model_file)
 
